@@ -1,137 +1,247 @@
 name: Debug Cypress E2E + email+ Slack 
+
 env:
-  email: ""
+
+  email: "AAAA"
+
 on:
-
-  push:
-    branches: [ main ]
-  pull_request:
-  workflow_dispatch:
-    inputs:
-      # Parameters
-      CASENAME:
-        description: "Name of test cases"
-        required: true
-        default: "cypress/e2e/**/*.js"
-      EMAIL_TO:
-        description: "Email To"
-        required: true
-        default: "dvxchen@qq.com"
-jobs:
-  cypress-test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Use Node.js Env
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      # Key fix：Use npm install to replace npm ci，resolve lockfile issue
-      - name: Install dependencies
-        run: npm install
-
-      # Run:  Cypress test
-      - name: Run Cypress tests
-        uses: cypress-io/github-action@v6
-        with:
-          browser: chrome
-        env:
-          CI: true
-          CYPRESS_CASENAME: ${{ inputs.casename }}
-
-      # 👇 Upload Video, screen shot, Report
-      - name: Upload (Video, screen shot, Report）
-        uses: actions/upload-artifact@v4
-        if: always()  # success and false
-        with:
-          name: cypress-output
-          path: |
-            cypress/videos/**/*.mp4
-            cypress/screenshots/**/*.png
-            cypress/reports/**/*
-      
-      
-      
-      # ==================== report and log ====================
-      - name: Generate Cypress report and log
-        if: always()
-        run: |
-          # generate JSON report
-          npx cypress run --reporter json > cypress-report.json 2>&1 || true
-          # output to console
-          cat cypress-report.json
-
-      # ==================== Success/failed/skip ====================
-      - name: Analysis
-        if: always()
-        id: parse
-        run: |
-          PASSED=$(jq -r '.stats.passed // 0' test-results.json 2>/dev/null || echo 0)
-          FAILED=$(jq -r '.stats.failed // 0' test-results.json 2>/dev/null || echo 0)
-          SKIPPED=$(jq -r '.stats.skipped // 0' test-results.json 2>/dev/null || echo 0)
-          TOTAL=$(jq -r '.stats.tests // 0' test-results.json 2>/dev/null || echo 0)
-          STATUS=$([ "$FAILED" -gt 0 ] && echo "failed" || echo "Success")
-
-          # Erite to env var
-         
-          echo "STATUS=$STATUS" >> $GITHUB_ENV
-          echo "PASSED=$PASSED" >> $GITHUB_ENV
-          echo "FAILED=$FAILED" >> $GITHUB_ENV
-          echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
-          echo "TOTAL=$TOTAL" >> $GITHUB_ENV
-          echo $PASSED $FAILED $SKIPPED $TOTAL
  
-      - name: Get current user's email
-        id: get-email
-        run: |
-          # Get trigger's email
-          email=$(gh api users/${{ github.actor }} --jq '.email')
-          echo $email
-          echo "email=$email" >> $GITHUB_ENV
-          echo ${{ env.email }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # =============================================
-      # ✅ Fix: send email on failed and success
-      # =============================================
-      - name: Send Email
-        if: always()  #
-        uses: dawidd6/action-send-mail@v3
+  push:
+
+    branches: [ main ]
+
+  pull_request:
+
+  workflow_dispatch:
+
+    inputs:
+
+      # Parameters
+
+      CASENAME:
+
+        description: "Name of test cases"
+
+        required: true
+
+        default: "cypress/e2e/**/*.js"
+
+      EMAIL_TO:
+
+        description: "Email To"
+
+        required: true
+
+        default: "dvxchen@qq.com"
+
+jobs:
+
+  cypress-test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout code
+
+        uses: actions/checkout@v4
+ 
+      # Use Node.js Env
+
+      - name: Setup Node.js
+
+        uses: actions/setup-node@v4
+
         with:
-          server_address: smtp.qq.com
-          server_port: 465
-          username: ${{ secrets.EMAIL_USER }}
-          password: ${{ secrets.EMAIL_PASS }}
-          subject: Cypress Auto Test Result ${{ job.status }}
-          body: |
-            Completed！
-            Test Case：${{ inputs.casename }}
-            Test Status：${{ job.status }}
-          to: ${{ inputs.EMAIL_TO }}
-          from: GitHub Actions
-          # HTML format
-          html_body: |
-            <h3>Cypress Auto Test Result ${{ job.status }}</h3>
-            <p>Click on below link to see details：</p>
-            <p><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">
-            See GitHub Actions Result
-            </a></p>
-      # ==============================================
-      # Send result to Slack
-      # ==============================================
-      - name: Send result to Slack
+
+          node-version: 20
+
+          cache: 'npm'
+ 
+      # Key fix：Use npm install to replace npm ci，resolve lockfile issue
+
+      - name: Install dependencies
+
+        run: npm install
+ 
+      # Run:  Cypress test
+
+      - name: Run Cypress tests
+
+        uses: cypress-io/github-action@v6
+
+        with:
+
+          browser: chrome
+
+        env:
+
+          CI: true
+
+          CYPRESS_CASENAME: ${{ inputs.casename }}
+ 
+      # 👇 Upload Video, screen shot, Report
+
+      - name: Upload (Video, screen shot, Report）
+
+        uses: actions/upload-artifact@v4
+
+        if: always()  # success and false
+
+        with:
+
+          name: cypress-output
+
+          path: |
+
+            cypress/videos/**/*.mp4
+
+            cypress/screenshots/**/*.png
+
+            cypress/reports/**/*
+
+
+      # ==================== report and log ====================
+
+      - name: Generate Cypress report and log
+
         if: always()
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            {
-              "text": "🧪 Cypress Auto test finish \n\n📦 Item：${{ github.repository }}\n👤 Operator：${{ github.actor }}\n✅ Status：${{ job.status }}\n🔗 Watch logs：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }
+
+        run: |
+
+          # generate JSON report
+
+          npx cypress run --reporter json > cypress-report.json 2>&1 || true
+
+          # output to console
+
+          cat cypress-report.json
+ 
+      # ==================== Success/failed/skip ====================
+
+      - name: Analysis
+
+        if: always()
+
+        id: parse
+
+        run: |
+
+          PASSED=$(jq -r '.stats.passed // 0' test-results.json 2>/dev/null || echo 0)
+
+          FAILED=$(jq -r '.stats.failed // 0' test-results.json 2>/dev/null || echo 0)
+
+          SKIPPED=$(jq -r '.stats.skipped // 0' test-results.json 2>/dev/null || echo 0)
+
+          TOTAL=$(jq -r '.stats.tests // 0' test-results.json 2>/dev/null || echo 0)
+
+          STATUS=$([ "$FAILED" -gt 0 ] && echo "failed" || echo "Success")
+ 
+          # Erite to env var
+
+          echo "STATUS=$STATUS" >> $GITHUB_ENV
+
+          echo "PASSED=$PASSED" >> $GITHUB_ENV
+
+          echo "FAILED=$FAILED" >> $GITHUB_ENV
+
+          echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
+
+          echo "TOTAL=$TOTAL" >> $GITHUB_ENV
+
+          echo $PASSED $FAILED $SKIPPED $TOTAL
+
+      - name: Get current user's email
+
+        id: get-email
+
+        run: |
+
+          # Get trigger's email
+
+          email=$(gh api users/${{ github.actor }} --jq '.email')
+
+          echo $email
+
+          echo "email=$email" >> $GITHUB_ENV
+
+          echo ${{ env.email }}
+
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # =============================================
+
+      # ✅ Fix: send email on failed and success
+
+      # =============================================
+
+      - name: Send Email
+
+        if: always()  #
+
+        uses: dawidd6/action-send-mail@v3
+
+        with:
+
+          server_address: smtp.qq.com
+
+          server_port: 465
+
+          username: ${{ secrets.EMAIL_USER }}
+
+          password: ${{ secrets.EMAIL_PASS }}
+
+          subject: Cypress Auto Test Result ${{ job.status }}
+
+          body: |
+
+            Completed！
+
+            Test Case：${{ inputs.casename }}
+
+            Test Status：${{ job.status }}
+
+          to: ${{ inputs.EMAIL_TO }}
+
+          from: GitHub Actions
+
+          # HTML format
+
+          html_body: |
+<h3>Cypress Auto Test Result ${{ job.status }}</h3>
+<p>Click on below link to see details：</p>
+<p><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">
+
+            See GitHub Actions Result
+</a></p>
+
+      # ==============================================
+
+      # Send result to Slack
+
+      # ==============================================
+
+      - name: Send result to Slack
+
+        if: always()
+
+        uses: slackapi/slack-github-action@v1.24.0
+
+        with:
+
+          payload: |
+
+            {
+
+              "text": "🧪 Cypress Auto test finish \n\n📦 Item：${{ github.repository }}\n👤 Operator：${{ github.actor }}\n✅ 状态：${{ job.status }}\n🔗 Watch logs：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+            }
+
+        env:
+
+          SLACK_WEBHOOK_URL: https://hooks.slack.com/services/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
+
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+ 

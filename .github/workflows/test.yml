@@ -1,0 +1,42 @@
+name: 手动触发工作流
+
+# 允许手动触发
+on:
+  workflow_dispatch:
+    # 可选：自定义输入参数
+    inputs:
+      environment:
+        description: '运行环境'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+      message:
+        description: '备注信息'
+        required: false
+        default: '手动触发'
+
+# 最小权限，更安全
+permissions:
+  contents: read
+
+jobs:
+  run-manual-task:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 显示输入参数
+        run: |
+          echo "运行环境: ${{ github.event.inputs.environment }}"
+          echo "备注信息: ${{ github.event.inputs.message }}"
+          echo "触发人: ${{ github.actor }}"
+
+      # 在这里写你自己的逻辑
+      - name: 执行任务
+        run: |
+          echo "开始执行手动任务..."

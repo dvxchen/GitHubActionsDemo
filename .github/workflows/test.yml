@@ -21,7 +21,7 @@ on:
 
 # 最小权限，更安全
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   run-manual-task:
